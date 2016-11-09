@@ -62,7 +62,7 @@ func runService(addrListen string) {
 
 	http.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
 		//TODO: move out after debugging
-		templates := template.Must(template.New("ui").Funcs(funcMap).ParseFiles("index.html"))
+		templates := template.Must(template.New("ui").Funcs(funcMap).ParseFiles("static/index.html"))
 
 		err := templates.ExecuteTemplate(w, "index.html", nil)
 		if err != nil {
