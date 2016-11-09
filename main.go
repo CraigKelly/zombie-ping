@@ -10,6 +10,12 @@ import (
 	"time"
 )
 
+//TODO: styling
+//TODO: working simple notifications
+//TODO: config (adding URL's to check)
+//TODO: URL polling and status page
+//TODO: actual notifications
+
 var buildDate string // Set by our build script
 
 func pcheck(err error) {
