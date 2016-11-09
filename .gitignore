@@ -1,0 +1,6 @@
+static/*.css
+zombie-ping
+debug
+debug.test
+cover.out
+.tested
