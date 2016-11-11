@@ -10,6 +10,7 @@ import (
 	"time"
 )
 
+//TODO: why are we getting a security error when we try to subscribe?
 //TODO: working simple notifications
 //TODO: if config missing, create on startup
 //TODO: using config
@@ -18,21 +19,21 @@ import (
 
 var buildDate string // Set by our build script
 
-func pcheck(err error) {
-	if err != nil {
-		log.Panicf("Fatal Error: %v\n", err)
-	}
+/////////////////////////////////////////////////////////////////////////////
+// Entry point
+
+func main() {
+	log.Printf("STARTING zombie-ping - built %s\n", buildDate)
+
+	flags := flag.NewFlagSet("zombie-ping", flag.ExitOnError)
+	hostBinding := flags.String("host", "", "How to listen for service")
+	pcheck(flags.Parse(os.Args))
+
+	runService(*hostBinding)
 }
 
-func jsonResponse(w http.ResponseWriter, req *http.Request, jsonSrc interface{}) {
-	js, err := json.Marshal(jsonSrc)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.Write(js)
-}
+/////////////////////////////////////////////////////////////////////////////
+// Actual web service/site
 
 func runService(addrListen string) {
 	// Read our config
@@ -66,11 +67,21 @@ func runService(addrListen string) {
 		}(t)
 	}
 
-	// TODO: any rest needed?
-	// http.HandleFunc("/accts", func(w http.ResponseWriter, req *http.Request) {
-	// 	log.Printf("GET %s - returning list of len %d\n", req.URL.Path, len(accts))
-	// 	jsonResponse(w, req, accts)
-	// })
+	// Endpoint for getting notification registrations from the browser
+	http.HandleFunc("/subscription-register", func(w http.ResponseWriter, req *http.Request) {
+		defer req.Body.Close()
+
+		decoder := json.NewDecoder(req.Body)
+		subscription := PushSubscription{}
+		err := decoder.Decode(&subscription)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		log.Printf("Got subscription: %v\n", subscription)
+		//TODO: actually use the subscription
+	})
 
 	// Serve static files
 	fs := http.FileServer(http.Dir("./static"))
@@ -91,6 +102,7 @@ func runService(addrListen string) {
 		}
 	})
 
+	// Actually serve all our endpoints
 	if addrListen == "" {
 		log.Printf("No host specified: using default\n")
 		addrListen = "127.0.0.1:8142"
@@ -102,14 +114,20 @@ func runService(addrListen string) {
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// Entry point
+// Helper utilities
 
-func main() {
-	log.Printf("STARTING zombie-ping - built %s\n", buildDate)
+func pcheck(err error) {
+	if err != nil {
+		log.Panicf("Fatal Error: %v\n", err)
+	}
+}
 
-	flags := flag.NewFlagSet("zombie-ping", flag.ExitOnError)
-	hostBinding := flags.String("host", "", "How to listen for service")
-	pcheck(flags.Parse(os.Args))
-
-	runService(*hostBinding)
+func jsonResponse(w http.ResponseWriter, req *http.Request, jsonSrc interface{}) {
+	js, err := json.Marshal(jsonSrc)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(js)
 }

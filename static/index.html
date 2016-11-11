@@ -4,9 +4,7 @@
     <meta charset="utf-8">
     <meta http-equiv="x-ua-compatible" content="ie=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-
     <meta name="author" content="Craig Kelly">
-
     <title>zombie-ping</title>
 
     <link href="https://fonts.googleapis.com/css?family=Arvo" rel="stylesheet">
@@ -26,11 +24,10 @@
         </div>
     </div>
 
-    <div class="panel" id="notify-mgr">
-        <div class="header">Notifications</div>
-        <div class="body">
-            TODO
-        </div>
+    <div class="panel" id="notify-curl">
+        <div class="header">Active Notification curl command</div>
+        <pre class="body" id="curl">
+        </pre>
     </div>
 </div>
 
@@ -41,11 +38,13 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.16.6/lodash.min.js" integrity="sha256-BWnUqM2wJJk2qUy9kUxldWF2drzn2awHUNcmMy87bDQ=" crossorigin="anonymous" type="text/javascript"></script>
 <script src="https://code.jquery.com/jquery-3.1.1.min.js" integrity="sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8=" crossorigin="anonymous" type="text/javascript"></script>
+
 <script type="text/javascript" src="/static/index.js"></script>
 
 <script type="text/javascript">
     $(function() {
-        //Nothing
+        // Start up the notification stuff
+        init_notifications();
     });
 </script>
 
