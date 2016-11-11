@@ -16,6 +16,10 @@ make
 ./zombie-ping
 ```
 
+## Configuration
+
+TODO: document config file
+
 ## Dependencies
 
 * `make` for building

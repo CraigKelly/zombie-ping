@@ -10,9 +10,9 @@ import (
 	"time"
 )
 
-//TODO: styling
 //TODO: working simple notifications
-//TODO: config (adding URL's to check)
+//TODO: if config missing, create on startup
+//TODO: using config
 //TODO: URL polling and status page
 //TODO: actual notifications
 
@@ -35,21 +35,36 @@ func jsonResponse(w http.ResponseWriter, req *http.Request, jsonSrc interface{})
 }
 
 func runService(addrListen string) {
-	// Make sure to update the tweets every 5 minutes
-	updateTicker := time.NewTicker(5 * time.Minute)
+	// Read our config
+	config, err := ReadConfiguration("./zombie-ping.json")
+	pcheck(err)
+	log.Printf("Read configuration: %d entries\n", len(config.Targets))
+
+	// Start our URL checkers
 	updateQuit := make(chan struct{})
 	defer close(updateQuit)
-	go func() {
-		for {
-			select {
-			case <-updateTicker.C:
-				log.Printf("Tick-Tock\n") //TODO: actually check links
-			case <-updateQuit:
-				updateTicker.Stop()
-				return
+
+	for _, t := range config.Targets {
+		go func(target PingTarget) {
+			seconds := time.Duration(target.PingSeconds) * time.Second
+			updateTicker := time.NewTicker(seconds)
+			checkNow := true
+			for {
+				if checkNow {
+					//TODO: actual URL check
+					log.Printf("Time to check %s\n", target.URL)
+					checkNow = false
+				}
+				select {
+				case <-updateTicker.C:
+					checkNow = true
+				case <-updateQuit:
+					updateTicker.Stop()
+					return
+				}
 			}
-		}
-	}()
+		}(t)
+	}
 
 	// TODO: any rest needed?
 	// http.HandleFunc("/accts", func(w http.ResponseWriter, req *http.Request) {
