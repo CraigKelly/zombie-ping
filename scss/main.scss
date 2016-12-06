@@ -49,6 +49,19 @@ header {
         justify-content: flex-start;
     }
 
+    .panel-simple {
+        flex: 1;
+        padding: 0;
+        margin: 1em;
+        width: 100%;
+        flex-basis: 100%;
+
+        @media screen and (min-width: 768px) {
+            width: auto;
+            flex-basis: 45%;
+        }
+    }
+
     .panel {
         flex: 1;
         padding: 0;
@@ -74,6 +87,41 @@ header {
         .body {
             padding: 1em;
         }
+    }
+}
+
+.status-results {
+    table {
+        th {
+            background-color: $color-alt;
+            color: #fff;
+            font-weight: bold;
+            font-size: 90%;
+            padding: 1em;
+            margin: 0;
+        }
+
+        td {
+            border: solid 1px #000;
+            border-collapse: collapse;
+            font-size: 100%;
+            padding: 1em;
+            margin: 0;
+            white-space: nowrap;
+        }
+    }
+
+    .state {
+        white-space: normal;
+        width: 25%;
+    }
+    .good-state {
+        @extend .state;
+        background-color: rgb(127, 255, 120);
+    }
+    .bad-state {
+        @extend .state;
+        background-color: rgb(255, 127, 120);
     }
 }
 

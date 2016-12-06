@@ -17,17 +17,8 @@
 </header>
 
 <div class="content">
-    <div class="panel" id="current-status">
-        <div class="header">Current Status</div>
-        <div class="body">
-            TODO
-        </div>
-    </div>
-
-    <div class="panel" id="notify-curl">
-        <div class="header">Active Notification curl command</div>
-        <pre class="body" id="curl">
-        </pre>
+    <div class="panel-simple" id="current-status-text">
+        Pending...
     </div>
 </div>
 
@@ -41,10 +32,50 @@
 
 <script type="text/javascript" src="/static/index.js"></script>
 
+<script type="text/template" class="statusTemplate">
+    <div class="status-results">
+        <table>
+            <thead><tr>
+                <th>Status</th>
+                <th>URL</th>
+                <th>Last Check</th>
+            </tr></thead>
+
+            <tbody>
+                <% _.forEach(ctx.status, function(one, url) { %>
+                    <tr>
+                        <td class="<%= one.IsGood ? 'good-state' : 'bad-state' %>">
+                            <%= one.StateDescrip %>
+                        </td>
+                        <td><%= url %></td>
+                        <td><%= one.LastCheck %></td>
+                    </tr>
+                <% }); %>
+            </tbody>
+        </table>
+        </div>
+    </div>
+</script>
+
 <script type="text/javascript">
+    var statusTemplate = _.template(
+        $("script.statusTemplate").html(),
+        { 'variable': 'ctx' }
+    );
     $(function() {
         // Start up the notification stuff
         init_notifications();
+
+        // Start grabbing
+        function updateStatus() {
+            get_status(function(data) {
+                $("#current-status-text").empty().append(statusTemplate({
+                    'status': data
+                }));
+                setTimeout(updateStatus, 5000);
+            });
+        }
+        setTimeout(updateStatus, 1);
     });
 </script>
 

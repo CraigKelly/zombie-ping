@@ -4,7 +4,7 @@
 
     // Simple subscription
     function do_subscribe() {
-        navigator.serviceWorker.register('service-worker.js')
+        navigator.serviceWorker.register('/static/service-worker.js')
             .then(function(registration) {
                 // Use the PushManager to get the user's subscription to the push service.
                 return registration.pushManager.getSubscription()
@@ -26,8 +26,7 @@
                 console.log("Have a subscription: telling the server about it");
                 endpoint = subscription.endpoint;
 
-                // Show curl command to send the notification on the page.
-                $('#curl').text('curl -H "TTL: 60" -X POST ' + endpoint);
+                console.log('curl -H "TTL: 60" -X POST ' + endpoint);
 
                 // Send the subscription details to the server using the Fetch API.
                 fetch('/subscription-register', {
@@ -37,6 +36,8 @@
                     },
                     body: JSON.stringify({
                         endpoint: subscription.endpoint,
+                        subscriptionId: subscription.subscriptionId || null,
+                        options: subscription.options || {},
                     }),
                 });
             });
@@ -61,5 +62,21 @@
             console.log("We have notification permission - proceeding");
             do_subscribe();
         }
+    };
+
+    module.get_status = function(callback) {
+        console.log("Getting status");
+        fetch('/status', {method: 'get'}).then(function(response){
+            if (response.ok) {
+                response.json().then(function(json){
+                    callback(json);
+                });
+            }
+            else {
+                console.log("Issue with network response!", response);
+            }
+        }).catch(function(err){
+            console.log("Fetch error for status:", err);
+        });
     };
 })(window || this);

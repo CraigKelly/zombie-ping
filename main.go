@@ -3,19 +3,14 @@ package main
 import (
 	"encoding/json"
 	"flag"
+	"fmt"
 	"html/template"
 	"log"
 	"net/http"
 	"os"
+	"sync"
 	"time"
 )
-
-//TODO: why are we getting a security error when we try to subscribe?
-//TODO: working simple notifications
-//TODO: if config missing, create on startup
-//TODO: using config
-//TODO: URL polling and status page
-//TODO: actual notifications
 
 var buildDate string // Set by our build script
 
@@ -41,7 +36,41 @@ func runService(addrListen string) {
 	pcheck(err)
 	log.Printf("Read configuration: %d entries\n", len(config.Targets))
 
-	// Start our URL checkers
+	//TODO: this is so ugly - we need to split subscription and status update
+	//      into other files and make channel based
+
+	// Subscription list
+	// Endpoint for getting notification registrations from the browser
+	//TODO: need to debounce within a 5 second period so that we aren't notifying too much
+	subscriptions := make(map[string]bool)
+	subscriptionsMtx := sync.RWMutex{}
+	doNotify := func() {
+		subscriptionsMtx.RLock()
+		defer subscriptionsMtx.RUnlock()
+		for u := range subscriptions {
+			go func(url string) {
+				log.Printf("Sending notification for %v\n", url)
+				client := &http.Client{}
+				req, _ := http.NewRequest("POST", url, nil)
+				req.Header.Set("TTL", "60")
+				client.Do(req)
+			}(u)
+		}
+	}
+
+	// Status map with safe update
+	urlStatus := CreateURLStatusMap()
+	urlUpdateMtx := sync.RWMutex{}
+	doUpdate := func(url string, descrip string, good bool) {
+		urlUpdateMtx.Lock()
+		defer urlUpdateMtx.Unlock()
+		urlStatus.SetState(url, descrip, good)
+		if !good {
+			doNotify()
+		}
+	}
+
+	// Status checkers
 	updateQuit := make(chan struct{})
 	defer close(updateQuit)
 
@@ -52,10 +81,16 @@ func runService(addrListen string) {
 			checkNow := true
 			for {
 				if checkNow {
-					//TODO: actual URL check
 					log.Printf("Time to check %s\n", target.URL)
+					resp, err := http.Get(target.URL)
+					if err != nil {
+						doUpdate(target.URL, fmt.Sprintf("Error: %v", err), false)
+					} else {
+						doUpdate(target.URL, resp.Status, resp.StatusCode == 200)
+					}
 					checkNow = false
 				}
+
 				select {
 				case <-updateTicker.C:
 					checkNow = true
@@ -67,7 +102,13 @@ func runService(addrListen string) {
 		}(t)
 	}
 
-	// Endpoint for getting notification registrations from the browser
+	// Endpoint for getting current status list
+	http.HandleFunc("/status", func(w http.ResponseWriter, req *http.Request) {
+		urlUpdateMtx.RLock()
+		defer urlUpdateMtx.RUnlock()
+		jsonResponse(w, req, urlStatus)
+	})
+
 	http.HandleFunc("/subscription-register", func(w http.ResponseWriter, req *http.Request) {
 		defer req.Body.Close()
 
@@ -80,7 +121,9 @@ func runService(addrListen string) {
 		}
 
 		log.Printf("Got subscription: %v\n", subscription)
-		//TODO: actually use the subscription
+		subscriptionsMtx.Lock()
+		defer subscriptionsMtx.Unlock()
+		subscriptions[subscription.Endpoint] = true
 	})
 
 	// Serve static files
@@ -92,10 +135,11 @@ func runService(addrListen string) {
 		"Year": func() string { return time.Now().Format("2006") },
 	}
 
-	http.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
-		//TODO: move out after debugging
-		templates := template.Must(template.New("ui").Funcs(funcMap).ParseFiles("static/index.html"))
+	// create templates
+	templates := template.Must(template.New("ui").Funcs(funcMap).ParseFiles("static/index.html"))
 
+	// Template handlers
+	http.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
 		err := templates.ExecuteTemplate(w, "index.html", nil)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
