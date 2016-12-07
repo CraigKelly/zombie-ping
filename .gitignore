@@ -5,3 +5,4 @@ debug.test
 cover.out
 .tested
 zombie-ping.json
+std*.log
