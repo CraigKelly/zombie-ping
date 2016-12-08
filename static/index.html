@@ -34,25 +34,14 @@
 
 <script type="text/template" class="statusTemplate">
     <div class="status-results">
-        <table>
-            <thead><tr>
-                <th>Status</th>
-                <th>URL</th>
-                <th>Last Check</th>
-            </tr></thead>
-
-            <tbody>
-                <% _.forEach(ctx.status, function(one, url) { %>
-                    <tr>
-                        <td class="<%= one.IsGood ? 'good-state' : 'bad-state' %>">
-                            <%= one.StateDescrip %>
-                        </td>
-                        <td><%= url %></td>
-                        <td><%= one.LastCheck %></td>
-                    </tr>
-                <% }); %>
-            </tbody>
-        </table>
+        <div class="Rtable">
+            <% _.forEach(ctx.status, function(one, url) { %>
+                <div class="cell <%= one.IsGood ? 'good-state' : 'bad-state' %>">
+                    <%= one.StateDescrip %>
+                </div>
+                <div class="cell"><%= url %></div>
+                <div class="cell"><%= one.LastCheck %></div>
+            <% }); %>
         </div>
     </div>
 </script>
